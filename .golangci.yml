@@ -1,0 +1,15 @@
+run:
+  timeout: 30s
+  issues-exit-code: 1
+
+whitespace:
+  multi-if: true
+  multi-func: true
+
+linters:
+  enable-all: true
+  disable:
+    - gochecknoglobals
+    - golint
+    - gomnd
+    - ireturn

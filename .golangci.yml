@@ -10,6 +10,5 @@ linters:
   enable-all: true
   disable:
     - gochecknoglobals
-    - golint
-    - gomnd
     - ireturn
+    - depguard

@@ -15,13 +15,13 @@ func (*Server) GetRequiredFlags() []string {
 }
 
 // ServeHTTP handle any request.
-func (*Server) ServeHTTP(rw http.ResponseWriter, req *http.Request) {
+func (*Server) ServeHTTP(rw http.ResponseWriter, _ *http.Request) {
 	rw.WriteHeader(http.StatusOK)
 	_, _ = rw.Write([]byte("Hello"))
 }
 
 // SetFlags set the available flags.
-func (*Server) SetFlags(f *pflag.FlagSet) {}
+func (*Server) SetFlags(_ *pflag.FlagSet) {}
 
 // GetArgs return the args.
 func (*Server) GetArgs() cobra.PositionalArgs {
@@ -46,7 +46,15 @@ func (*Server) Info() string {
 // Run executes the script associated to the command.
 func (s *Server) Run() RunCmd {
 	return func(_ *cobra.Command, _ []string) {
-		_ = http.ListenAndServe(":8081", s)
+		server := &http.Server{
+			Addr:    ":8081",
+			Handler: s,
+		}
+
+		err := server.ListenAndServe()
+		if err != nil {
+			panic(err)
+		}
 	}
 }
 

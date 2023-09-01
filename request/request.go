@@ -2,8 +2,11 @@ package request
 
 import (
 	"bytes"
+	"context"
+	"crypto/tls"
 	"fmt"
 	"io"
+	"math/rand"
 	"net/http"
 	"net/url"
 	"time"
@@ -11,42 +14,62 @@ import (
 	"github.com/darkweak/rudy/logger"
 )
 
-type request struct {
+const (
+	defaultCookieMaxAge        = 300
+	defaultCookieBoundaryValue = 10000
+)
+
+type Request struct {
 	client      *http.Client
 	delay       time.Duration
 	payloadSize int64
 	req         *http.Request
 }
 
-func NewRequest(size int64, u string, delay time.Duration) *request {
-	req, _ := http.NewRequest(http.MethodPost, u, nil)
+func NewRequest(size int64, path string, delay time.Duration) *Request {
+	cookie := &http.Cookie{ //nolint:exhaustivestruct,exhaustruct
+		Name:   "rand",
+		Value:  fmt.Sprint(rand.Intn(defaultCookieBoundaryValue) + 1), //nolint:gosec
+		MaxAge: defaultCookieMaxAge,
+	}
+	req, _ := http.NewRequestWithContext(context.Background(), http.MethodPost, path, nil)
 	req.ProtoMajor = 1
 	req.ProtoMinor = 1
 	req.TransferEncoding = []string{"chunked"}
 	req.Header = make(map[string][]string)
 
-	return &request{
-		client:      http.DefaultClient,
+	req.AddCookie(cookie)
+
+	client := http.DefaultClient
+	client.CheckRedirect = func(req *http.Request, via []*http.Request) error {
+		return http.ErrUseLastResponse
+	}
+
+	return &Request{
+		client:      client,
 		delay:       delay,
 		payloadSize: size,
 		req:         req,
 	}
 }
 
-func (r *request) WithTor(endpoint string) *request {
+func (r *Request) WithTor(endpoint string) *Request {
 	torProxy, err := url.Parse(endpoint)
 	if err != nil {
 		panic("Failed to parse proxy URL:" + err.Error())
 	}
 
 	var transport http.Transport
+	transport.TLSClientConfig = &tls.Config{ //nolint:exhaustivestruct,exhaustruct
+		InsecureSkipVerify: true, //nolint:gosec
+	}
 	transport.Proxy = http.ProxyURL(torProxy)
 	r.client.Transport = &transport
 
 	return r
 }
 
-func (r *request) Send() error {
+func (r *Request) Send() error {
 	pipeReader, pipeWriter := io.Pipe()
 	r.req.Body = pipeReader
 	closerChan := make(chan int)
@@ -76,11 +99,13 @@ func (r *request) Send() error {
 		}
 	}()
 
-	var err error
-	if _, err = r.client.Do(r.req); err != nil {
+	res, err := r.client.Do(r.req)
+	if err != nil {
 		err = fmt.Errorf("an error occurred during the request: %w", err)
 		logger.Logger.Sugar().Error(err)
 		closerChan <- 1
+	} else {
+		res.Body.Close()
 	}
 
 	return err

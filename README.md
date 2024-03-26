@@ -46,7 +46,7 @@ There are some options to change the rudy default behaviour
 | Concurrent requests | The number of concurrent requests to send on the target.                 | `--concurrents`  | `-c`       | `4`                     | `1`           |
 | Filepath            | Filepath to the payload to send. By default it's a random payload (1MB). | `--filepath`     | `-f`       | `/somewhere/file`       |               |
 | Interval            | Interval duration between the requests.                                  | `--interval`     | `-i`       | `3s`                    | `10s`         |
-| Size                | Random payload size to send. Used if no filepath given.                  | `--payload-size` | `-s`       | `1GB`                   | `1MB`         |
+| Size                | Random payload size to send. Used if no filepath given.                  | `--payload-size` | `-p`       | `1GB`                   | `1MB`         |
 | Tor                 | Use TOR proxy to send the requests.                                      | `--tor`          | `-t`       | `socks5://tor_endpoint` |               |
 
 ### Run the testing server

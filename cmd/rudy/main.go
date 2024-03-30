@@ -7,6 +7,7 @@ import (
 	"os/signal"
 
 	"github.com/darkweak/rudy/commands"
+	"github.com/darkweak/rudy/request"
 	"github.com/spf13/cobra"
 )
 
@@ -28,6 +29,7 @@ func main() {
 	defer cancel()
 
 	go trapSignals(ctx, cancel)
+	request.Context = ctx
 
 	var root cobra.Command
 

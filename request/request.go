@@ -19,6 +19,8 @@ const (
 	defaultCookieBoundaryValue = 10000
 )
 
+var Context = context.Background()
+
 type Request struct {
 	client      *http.Client
 	delay       time.Duration
@@ -32,7 +34,7 @@ func NewRequest(size int64, path string, delay time.Duration) *Request {
 		Value:  fmt.Sprint(rand.Intn(defaultCookieBoundaryValue) + 1), //nolint:gosec
 		MaxAge: defaultCookieMaxAge,
 	}
-	req, _ := http.NewRequestWithContext(context.Background(), http.MethodPost, path, nil)
+	req, _ := http.NewRequestWithContext(Context, http.MethodPost, path, nil)
 	req.ProtoMajor = 1
 	req.ProtoMinor = 1
 	req.TransferEncoding = []string{"chunked"}

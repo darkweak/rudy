@@ -50,7 +50,7 @@ There are some options to change the rudy default behaviour
 | Tor                 | Use TOR proxy to send the requests.                                      | `--tor`          | `-t`       | `socks5://tor_endpoint` |               |
 
 ### Run the testing server
-It will start a serer on the port `:8081`
+It will start a server on the port `:8081`
 ```bash
 rudy server
 ```

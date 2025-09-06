@@ -1,3 +1,4 @@
+// Package commands handle the commands
 package commands
 
 import (
@@ -15,12 +16,14 @@ type (
 		GetLongDescription() string
 		GetRequiredFlags() []string
 		Run() RunCmd
-		SetFlags(*pflag.FlagSet)
+		SetFlags(p *pflag.FlagSet)
 	}
 	commandInstanciator func() command
-	RunCmd              func(cmd *cobra.Command, args []string)
+	// RunCmd is the command to run.
+	RunCmd func(cmd *cobra.Command, args []string)
 )
 
+// Prepare is the setup.
 func Prepare(root *cobra.Command) {
 	for _, item := range list {
 		var cobraCmd cobra.Command

@@ -1,15 +1,37 @@
-run:
-  timeout: 30s
-  issues-exit-code: 1
-
-whitespace:
-  multi-if: true
-  multi-func: true
+version: "2"
 
 linters:
-  enable-all: true
+  default: all
   disable:
     - gochecknoglobals
-    - golint
-    - gomnd
     - ireturn
+    - wsl # Deprecated
+  settings:
+    depguard:
+      rules:
+        main:
+          allow:
+            - $gostd
+            - github.com/darkweak/rudy
+            - github.com/dustin/go-humanize
+            - github.com/spf13/cobra
+            - github.com/spf13/pflag
+            - go.uber.org/zap
+issues:
+  fix: true
+
+# run:
+#   timeout: 30s
+#   issues-exit-code: 1
+#
+# whitespace:
+#   multi-if: true
+#   multi-func: true
+#
+# linters:
+#   enable-all: true
+#   disable:
+#     - gochecknoglobals
+#     - golint
+#     - gomnd
+#     - ireturn

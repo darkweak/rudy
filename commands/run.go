@@ -1,6 +1,7 @@
 package commands
 
 import (
+	"math"
 	"sync"
 	"time"
 
@@ -20,13 +21,16 @@ var (
 	url         string
 )
 
+const defaultInterval = 10 * time.Second
+
+// Run is the runtime.
 type Run struct{}
 
 // SetFlags set the available flags.
 func (*Run) SetFlags(flags *pflag.FlagSet) {
 	flags.Int64VarP(&concurrents, "concurrents", "c", 1, "Concurrent requests count.")
 	flags.StringVarP(&filepath, "filepath", "f", "", "Filepath to the payload.")
-	flags.DurationVarP(&interval, "interval", "i", 10*time.Second, "Interval between packets.")
+	flags.DurationVarP(&interval, "interval", "i", defaultInterval, "Interval between packets.")
 	// Default ~1MB
 	flags.StringVarP(&size, "payload-size", "p", "1MB", "Random generated payload with the given size.")
 	flags.StringVarP(&tor, "tor", "t", "", "TOR endpoint (either socks5://1.1.1.1:1234, or 1.1.1.1:1234).")
@@ -62,6 +66,7 @@ func (*Run) Info() string {
 func (*Run) Run() RunCmd {
 	return func(_ *cobra.Command, _ []string) {
 		var waitgroup sync.WaitGroup
+
 		isize, e := humanize.ParseBytes(size)
 		if e != nil {
 			panic(e)
@@ -69,8 +74,12 @@ func (*Run) Run() RunCmd {
 
 		waitgroup.Add(int(concurrents))
 
-		for i := 0; i < int(concurrents); i++ {
+		for range concurrents {
 			go func() {
+				if isize > math.MaxInt64 {
+					return
+				}
+
 				req := request.NewRequest(int64(isize), url, interval)
 				if tor != "" {
 					req.WithTor(tor)

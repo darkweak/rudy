@@ -1,3 +1,4 @@
+// Package main is the main entrypoint
 package main
 
 import (
@@ -10,7 +11,8 @@ func main() {
 
 	commands.Prepare(&root)
 
-	if err := root.Execute(); err != nil {
+	err := root.Execute()
+	if err != nil {
 		panic(err)
 	}
 }

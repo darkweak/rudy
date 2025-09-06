@@ -1,7 +1,9 @@
+// Package request handles the request lifetime.
 package request
 
 import (
 	"bytes"
+	"context"
 	"fmt"
 	"io"
 	"net/http"
@@ -18,8 +20,15 @@ type request struct {
 	req         *http.Request
 }
 
-func NewRequest(size int64, u string, delay time.Duration) *request {
-	req, _ := http.NewRequest(http.MethodPost, u, nil)
+// Request is a rapper.
+type Request interface {
+	WithTor(endpoint string) *request
+	Send() error
+}
+
+// NewRequest creates the request.
+func NewRequest(size int64, u string, delay time.Duration) Request {
+	req, _ := http.NewRequestWithContext(context.Background(), http.MethodPost, u, nil)
 	req.ProtoMajor = 1
 	req.ProtoMinor = 1
 	req.TransferEncoding = []string{"chunked"}
@@ -40,6 +49,7 @@ func (r *request) WithTor(endpoint string) *request {
 	}
 
 	var transport http.Transport
+
 	transport.Proxy = http.ProxyURL(torProxy)
 	r.client.Transport = &transport
 
@@ -57,7 +67,9 @@ func (r *request) Send() error {
 		buf := make([]byte, 1)
 		newBuffer := bytes.NewBuffer(make([]byte, r.payloadSize))
 
-		defer pipeWriter.Close()
+		defer func() {
+			_ = pipeWriter.Close()
+		}()
 
 		for {
 			select {
@@ -77,11 +89,18 @@ func (r *request) Send() error {
 	}()
 
 	var err error
-	if _, err = r.client.Do(r.req); err != nil {
+
+	res, err := r.client.Do(r.req)
+	if err != nil {
 		err = fmt.Errorf("an error occurred during the request: %w", err)
 		logger.Logger.Sugar().Error(err)
+
 		closerChan <- 1
 	}
+
+	defer func() {
+		_ = res.Body.Close()
+	}()
 
 	return err
 }

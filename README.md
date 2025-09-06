@@ -14,7 +14,7 @@ The RUDY attack opens concurrent POST HTTP connections to the HTTP server and de
 
 ### Using `go install`
 ```bash
-go install -u github.com/darkweak/rudy/cmd/rudy@latest
+go install github.com/darkweak/rudy/cmd/rudy@latest
 rudy [command]
 ```
 
@@ -29,7 +29,7 @@ go run rudy.go [command]
 ```bash
 git clone https://github.com/darkweak/rudy
 cd rudy
-go build rudy.go -o rudy
+go build -o rudy rudy.go
 rudy [command]
 ```
 

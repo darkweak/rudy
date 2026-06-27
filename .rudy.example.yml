@@ -1,0 +1,10 @@
+concurrents: 4
+filepath: /tmp/path/to/payload-file
+interval: 10s
+payload-size: 1MB
+tor: socks5://tor_endpoint
+method: PATCH
+headers:
+  - ContentType:application/json
+  - Accept:text/html
+url: http://domain.com

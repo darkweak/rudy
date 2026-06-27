@@ -2,6 +2,7 @@ package commands
 
 import (
 	"math"
+	"net/http"
 	"sync"
 	"time"
 
@@ -18,6 +19,8 @@ var (
 	interval    time.Duration
 	size        string
 	tor         string
+	method      string
+	headers     []string
 	url         string
 )
 
@@ -34,7 +37,13 @@ func (*Run) SetFlags(flags *pflag.FlagSet) {
 	// Default ~1MB
 	flags.StringVarP(&size, "payload-size", "p", "1MB", "Random generated payload with the given size.")
 	flags.StringVarP(&tor, "tor", "t", "", "TOR endpoint (either socks5://1.1.1.1:1234, or 1.1.1.1:1234).")
+	flags.StringVarP(&method, "method", "m", http.MethodPost, "GET")
+	headersParam := flags.StringSlice("header", nil, "Content-Type:application/json")
 	flags.StringVarP(&url, "url", "u", "", "Target URL to send the attack to.")
+
+	if headersParam != nil {
+		headers = *headersParam
+	}
 }
 
 // GetRequiredFlags returns the server required flags.
@@ -80,7 +89,7 @@ func (*Run) Run() RunCmd {
 					return
 				}
 
-				req := request.NewRequest(int64(isize), url, interval)
+				req := request.NewRequest(int64(isize), url, interval, method, headers)
 				if tor != "" {
 					req.WithTor(tor)
 				}

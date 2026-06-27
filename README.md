@@ -39,15 +39,33 @@ rudy [command]
 rudy run -u http://domain.com
 ```
 
-There are some options to change the rudy default behaviour 
-| Name                | Description                                                              | Long flag        | Short flag | Example value           | Default value |
-|:--------------------|:-------------------------------------------------------------------------|:-----------------|:-----------|:------------------------|:--------------|
-| URL                 | The target URL to run the attack on.                                     | `--url`          | `-u`       | `http://domain.com`     |               |
-| Concurrent requests | The number of concurrent requests to send on the target.                 | `--concurrents`  | `-c`       | `4`                     | `1`           |
-| Filepath            | Filepath to the payload to send. By default it's a random payload (1MB). | `--filepath`     | `-f`       | `/somewhere/file`       |               |
-| Interval            | Interval duration between the requests.                                  | `--interval`     | `-i`       | `3s`                    | `10s`         |
-| Size                | Random payload size to send. Used if no filepath given.                  | `--payload-size` | `-p`       | `1GB`                   | `1MB`         |
-| Tor                 | Use TOR proxy to send the requests.                                      | `--tor`          | `-t`       | `socks5://tor_endpoint` |               |
+There are some options to change the rudy default behaviour
+
+| Name                | Description                                                              | Long flag        | Short flag | Example value                    | Default value |
+|:--------------------|:-------------------------------------------------------------------------|:-----------------|:-----------|:---------------------------------|:--------------|
+| URL                 | The target URL to run the attack on.                                     | `--url`          | `-u`       | `http://domain.com`              |               |
+| Concurrent requests | The number of concurrent requests to send on the target.                 | `--concurrents`  | `-c`       | `4`                              | `1`           |
+| Filepath            | Filepath to the payload to send. By default it's a random payload (1MB). | `--filepath`     | `-f`       | `/somewhere/file`                |               |
+| Interval            | Interval duration between the requests.                                  | `--interval`     | `-i`       | `3s`                             | `10s`         |
+| Size                | Random payload size to send. Used if no filepath given.                  | `--payload-size` | `-p`       | `1GB`                            | `1MB`         |
+| Tor                 | Use TOR proxy to send the requests.                                      | `--tor`          | `-t`       | `socks5://tor_endpoint`          |               |
+| Header              | Pass additional headers to the request, you can pass multiple headers.   | `--header`       | `-h`       | `Content-Type: application/json` |               |
+| Method              | Set the request HTTP method.                                             | `--method`       | `-m`       | `PATCH`                          |               |
+
+## Configuration file
+You can define a `.rudy.yml` file to statically define options then override it using CLI flags.
+```yaml
+concurrents: 4
+filepath: /tmp/path/to/payload-file
+interval: 10s
+payload-size: 1MB
+tor: socks5://tor_endpoint
+method: PATCH
+headers:
+  - ContentType:application/json
+  - Accept:text/html
+url: http://domain.com
+```
 
 ### Run the testing server
 It will start a server on the port `:8081`

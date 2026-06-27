@@ -8,6 +8,7 @@ import (
 	"io"
 	"net/http"
 	"net/url"
+	"strings"
 	"time"
 
 	"github.com/darkweak/rudy/logger"
@@ -27,12 +28,17 @@ type Request interface {
 }
 
 // NewRequest creates the request.
-func NewRequest(size int64, u string, delay time.Duration) Request {
-	req, _ := http.NewRequestWithContext(context.Background(), http.MethodPost, u, nil)
+func NewRequest(size int64, u string, delay time.Duration, method string, headers []string) Request {
+	req, _ := http.NewRequestWithContext(context.Background(), method, u, nil)
 	req.ProtoMajor = 1
 	req.ProtoMinor = 1
 	req.TransferEncoding = []string{"chunked"}
 	req.Header = make(map[string][]string)
+
+	for _, h := range headers {
+		header := strings.Split(h, ":")
+		req.Header.Set(header[0], strings.TrimPrefix(header[1], " "))
+	}
 
 	return &request{
 		client:      http.DefaultClient,

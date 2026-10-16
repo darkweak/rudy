@@ -25,7 +25,7 @@ const (
 	ProtocolHTTP1 Protocol = "http1"
 	// ProtocolHTTP2 forces HTTP/2 over TLS (ALPN h2).
 	ProtocolHTTP2 Protocol = "http2"
-	// ProtocolH2C forces cleartext HTTP/2 (h2c)
+	// ProtocolH2C forces cleartext HTTP/2 (h2c).
 	ProtocolH2C Protocol = "h2c"
 )
 
@@ -84,6 +84,13 @@ func NewRequest(opts Options) Request {
 		req.Proto = "HTTP/2.0"
 		req.ProtoMajor = 2
 		req.ProtoMinor = 0
+	case ProtocolHTTP1:
+		// Classic RUDY: HTTP/1.1 + chunked body, one byte at a time.
+		req.Proto = "HTTP/1.1"
+		req.ProtoMajor = 1
+		req.ProtoMinor = 1
+		req.TransferEncoding = []string{"chunked"}
+		req.ContentLength = -1
 	default:
 		// Classic RUDY: HTTP/1.1 + chunked body, one byte at a time.
 		req.Proto = "HTTP/1.1"
@@ -93,65 +100,19 @@ func NewRequest(opts Options) Request {
 		req.ContentLength = -1
 	}
 
-	r := &request{
+	internalRq := &request{
 		delay:       opts.Delay,
 		payloadSize: opts.Size,
 		req:         req,
 		protocol:    proto,
 		insecure:    opts.Insecure,
-	}
-	r.client = &http.Client{
-		Transport: r.buildTransport(opts.Tor),
-		// No overall timeout: the point is to keep the stream/connection open.
-		Timeout: 0,
+		client:      new(http.Client),
 	}
 
-	return r
-}
+	internalRq.client.Transport = internalRq.buildTransport(opts.Tor)
+	internalRq.client.Timeout = 0
 
-func (r *request) tlsConfig() *tls.Config {
-	return &tls.Config{
-		InsecureSkipVerify: r.insecure,
-		NextProtos:         []string{http2.NextProtoTLS},
-	}
-}
-
-func (r *request) buildTransport(torEndpoint string) http.RoundTripper {
-	var proxy func(*http.Request) (*url.URL, error)
-
-	if torEndpoint != "" {
-		torProxy, err := url.Parse(torEndpoint)
-		if err != nil {
-			panic("Failed to parse proxy URL:" + err.Error())
-		}
-
-		proxy = http.ProxyURL(torProxy)
-	}
-
-	switch r.protocol {
-	case ProtocolHTTP2:
-		// One http2.Transport per session ⇒ separate TCP+TLS connections per concurrent.
-		return &http2.Transport{
-			TLSClientConfig: r.tlsConfig(),
-		}
-	case ProtocolH2C:
-		return &http2.Transport{
-			AllowHTTP: true,
-			// DialTLSContext is the dial hook even for cleartext when AllowHTTP is set.
-			DialTLSContext: func(ctx context.Context, network, addr string, _ *tls.Config) (net.Conn, error) {
-				var d net.Dialer
-
-				return d.DialContext(ctx, network, addr)
-			},
-		}
-	default:
-		return &http.Transport{
-			Proxy:           proxy,
-			TLSClientConfig: r.tlsConfig(),
-			// Disable HTTP/2 so we stay on HTTP/1.1 chunked RUDY.
-			TLSNextProto: map[string]func(string, *tls.Conn) http.RoundTripper{},
-		}
-	}
+	return internalRq
 }
 
 // WithTor attaches a TOR socks proxy (HTTP/1 path). Prefer Options.Tor at construction.
@@ -203,6 +164,15 @@ func (r *request) Send() error {
 		}
 	}()
 
+	err := r.sendRequest()
+	if err != nil {
+		return fmt.Errorf("an error occurred during the request: %w", err)
+	}
+
+	return nil
+}
+
+func (r *request) sendRequest() error {
 	res, err := r.client.Do(r.req)
 	if err != nil {
 		err = fmt.Errorf("an error occurred during the request: %w", err)
@@ -224,4 +194,57 @@ func (r *request) Send() error {
 	)
 
 	return nil
+}
+
+func (r *request) tlsConfig() *tls.Config {
+	tlsConfig := new(tls.Config)
+	tlsConfig.InsecureSkipVerify = r.insecure
+	tlsConfig.NextProtos = []string{http2.NextProtoTLS}
+
+	return tlsConfig
+}
+
+func (r *request) buildTransport(torEndpoint string) http.RoundTripper {
+	var proxy func(*http.Request) (*url.URL, error)
+
+	if torEndpoint != "" {
+		torProxy, err := url.Parse(torEndpoint)
+		if err != nil {
+			panic("Failed to parse proxy URL:" + err.Error())
+		}
+
+		proxy = http.ProxyURL(torProxy)
+	}
+
+	httpTransport := new(http.Transport)
+
+	switch r.protocol {
+	case ProtocolHTTP2:
+		// One http2.Transport per session ⇒ separate TCP+TLS connections per concurrent.
+		httpTransport.TLSClientConfig = r.tlsConfig()
+		httpTransport.ForceAttemptHTTP2 = true
+
+		return httpTransport
+	case ProtocolH2C:
+		httpTransport.ForceAttemptHTTP2 = true
+		httpTransport.DialTLSContext = func(ctx context.Context, network, addr string) (net.Conn, error) {
+			var d net.Dialer
+
+			return d.DialContext(ctx, network, addr)
+		}
+
+		return httpTransport
+	case ProtocolHTTP1:
+		httpTransport.Proxy = proxy
+		httpTransport.TLSClientConfig = r.tlsConfig()
+		httpTransport.TLSNextProto = map[string]func(string, *tls.Conn) http.RoundTripper{}
+
+		return httpTransport
+	default:
+		httpTransport.Proxy = proxy
+		httpTransport.TLSClientConfig = r.tlsConfig()
+		httpTransport.TLSNextProto = map[string]func(string, *tls.Conn) http.RoundTripper{}
+
+		return httpTransport
+	}
 }

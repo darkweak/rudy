@@ -41,18 +41,19 @@ rudy run -u http://domain.com
 
 There are some options to change the rudy default behaviour
 
-| Name                | Description                                                              | Long flag        | Short flag | Example value                    | Default value |
-|:--------------------|:-------------------------------------------------------------------------|:-----------------|:-----------|:---------------------------------|:--------------|
-| URL                 | The target URL to run the attack on.                                     | `--url`          | `-u`       | `http://domain.com`              |               |
-| Concurrent requests | The number of concurrent requests to send on the target.                 | `--concurrents`  | `-c`       | `4`                              | `1`           |
-| Filepath            | Filepath to the payload to send. By default it's a random payload (1MB). | `--filepath`     | `-f`       | `/somewhere/file`                |               |
-| Interval            | Interval duration between the requests.                                  | `--interval`     | `-i`       | `3s`                             | `10s`         |
-| Size                | Random payload size to send. Used if no filepath given.                  | `--payload-size` | `-p`       | `1GB`                            | `1MB`         |
-| Tor                 | Use TOR proxy to send the requests.                                      | `--tor`          | `-t`       | `socks5://tor_endpoint`          |               |
-| Header              | Pass additional headers to the request, you can pass multiple headers.   | `--header`       | `-h`       | `Content-Type: application/json` |               |
-| Method              | Set the request HTTP method.                                             | `--method`       | `-m`       | `PATCH`                          |               |
-| Protocol            | HTTP version: `http1` (chunked), `http2` (TLS), `h2c` (cleartext).       | `--protocol`     |            | `http2`                          | `http1`       |
-| Insecure            | Skip TLS certificate verification (lab / self-signed).                   | `--insecure`     | `-k`       |                                  | `false`       |
+| Name                | Description                                                                  | Long flag        | Short flag | Example value                    | Default value |
+|:--------------------|:-----------------------------------------------------------------------------|:-----------------|:-----------|:---------------------------------|:--------------|
+| URL                 | The target URL to run the attack on.                                         | `--url`          | `-u`       | `http://domain.com`              |               |
+| Concurrent requests | The number of concurrent requests to send on the target.                     | `--concurrents`  | `-c`       | `4`                              | `1`           |
+| Filepath            | Filepath to the payload to send. By default it's a random payload (1MB).     | `--filepath`     | `-f`       | `/somewhere/file`                |               |
+| Interval            | Interval duration between the requests.                                      | `--interval`     | `-i`       | `3s`                             | `10s`         |
+| Size                | Random payload size to send. Used if no filepath given.                      | `--payload-size` | `-p`       | `1GB`                            | `1MB`         |
+| Tor                 | Use TOR proxy to send the requests.                                          | `--tor`          | `-t`       | `socks5://tor_endpoint`          |               |
+| Header              | Pass additional headers to the request, you can pass multiple headers.       | `--header`       | `-h`       | `Content-Type: application/json` |               |
+| Method              | Set the request HTTP method.                                                 | `--method`       | `-m`       | `PATCH`                          |               |
+| Protocol            | HTTP version: `http1` (chunked), `http2` (TLS), `h2c` (cleartext).           | `--protocol`     |            | `http2`                          | `http1`       |
+| Throttle            | Random duration between 0. and the value to simulate a real flaky connection | `--throttle`     | `-t`       | `150ms`                          | `0ms`         |
+| Insecure            | Skip TLS certificate verification (lab / self-signed).                       | `--insecure`     | `-k`       |                                  | `false`       |
 
 ### HTTP/1.1 vs HTTP/2 slow body
 
@@ -91,6 +92,7 @@ headers:
   - Accept:text/html
 url: http://domain.com
 protocol: http1   # http1 | http2 | h2c
+throttle: 10s
 insecure: false
 ```
 

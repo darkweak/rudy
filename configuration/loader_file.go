@@ -20,6 +20,7 @@ type FileLoader struct {
 	Headers     *[]string      `yaml:"headers"`
 	URL         *string        `yaml:"url"`
 	Protocol    *string        `yaml:"protocol"`
+	Throttle    *time.Duration `yaml:"throttle"`
 	Insecure    *bool          `yaml:"insecure"`
 }
 

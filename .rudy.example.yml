@@ -10,5 +10,6 @@ headers:
 url: http://domain.com
 # protocol: http1 | http2 | h2c
 protocol: http1
+throttle: 15ms
 # skip TLS verify for lab/self-signed targets (http2)
 insecure: false

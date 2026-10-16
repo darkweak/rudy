@@ -79,6 +79,7 @@ func Prepare(root *cobra.Command) {
 			setVar(flags, "headers", &headers, mfl.Headers)
 			setVar(flags, "url", &url, mfl.URL)
 			setVar(flags, "protocol", &protocol, mfl.Protocol)
+			setVar(flags, "throttle", &throttle, mfl.Throttle)
 			setVar(flags, "insecure", &insecure, mfl.Insecure)
 		}
 

